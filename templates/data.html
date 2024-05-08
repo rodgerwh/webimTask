@@ -1,0 +1,25 @@
+<!-- templates/data.html -->
+<html lang="en">
+<head>
+    <title>Data</title>
+</head>
+<body>
+    {% if access_token %}
+    <p>Latest Data: <span id="data">{{ data }}</span></p>
+        <form action="/logout" method="get">
+            <button type="submit">Logout</button>
+        </form>
+    {% else %}
+        <a href="/login">Login with GitHub</a>
+    {% endif %}
+    <script>
+        let socket = new WebSocket("ws://localhost:8000/ws");
+        socket.onmessage = function(event) {
+            let dataElement = document.getElementById("data");
+            if (dataElement) {
+                dataElement.innerText = event.data;
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+services:
+  app:
+    container_name: webim_app
+    depends_on:
+      - redis
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  celery:
+    container_name: webim_celery
+    depends_on:
+      - redis
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    command: celery -A main.celery worker --loglevel=INFO
+
+  celery-beat:
+    container_name: webim_celerybeat
+    depends_on:
+      - redis
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    command: celery -A main.celery beat --loglevel=INFO
+
+  redis:
+    container_name: webim_redis
+    image: redis:latest
+    ports:
+      - "6379:6379"
