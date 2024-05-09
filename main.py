@@ -1,4 +1,5 @@
-import os
+from asyncio import sleep
+from random import randint
 from typing import Optional
 
 import httpx
@@ -13,29 +14,23 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from starlette.responses import JSONResponse
+from starlette.responses import RedirectResponse
 
 from auth import router as auth_router
-from config import (
-    REDIS_URL,
-    GITHUB_USER_URL,
-)
+from config import settings
 from utils import generate_data
 
 app = FastAPI()
 app.include_router(auth_router)
 
 websocket_clients = set()
-
+templates = Jinja2Templates(directory="templates")
+redis_client = redis.Redis.from_url(settings.REDIS_URL)
 celery = Celery(
     "tasks",
-    backend=REDIS_URL,
-    broker=REDIS_URL,
+    backend=settings.REDIS_URL,
+    broker=settings.REDIS_URL,
 )
-
-redis_client = redis.Redis.from_url(REDIS_URL)
-
-templates = Jinja2Templates(directory="templates")
 
 
 @app.websocket("/ws")
@@ -44,19 +39,25 @@ async def websocket_endpoint(websocket: WebSocket):
     websocket_clients.add(websocket)
     try:
         while True:
-            await websocket.send_text(get_data())
+            data = get_data()
+            if data:
+                await websocket.send_text(data)
+            await sleep(5)
     except WebSocketDisconnect:
         websocket_clients.remove(websocket)
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse, name="fetch_data")
 async def fetch_data(request: Request, access_token: Optional[str] = Cookie(None)):
     if access_token:
         headers = {"Authorization": f"token {access_token}"}
         async with httpx.AsyncClient() as client:
-            response = await client.get(GITHUB_USER_URL, headers=headers)
+            response = await client.get(settings.GITHUB_USER_URL, headers=headers)
             if response.status_code != 200:
-                return JSONResponse(status_code=401, content={"error": "Invalid token"})
+                response = RedirectResponse(url=app.url_path_for("fetch_data"))
+                response.delete_cookie(key="access_token")
+                return response
+
     return templates.TemplateResponse(
         "data.html",
         {
@@ -73,7 +74,7 @@ def get_data():
 
 @celery.task
 def set_data():
-    redis_client.set("data", generate_data(16))
+    redis_client.set("data", generate_data(randint(1, 500)))
 
 
 celery.conf.beat_schedule = {

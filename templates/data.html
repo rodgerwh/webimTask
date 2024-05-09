@@ -1,17 +1,52 @@
 <!-- templates/data.html -->
+<!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+        .card {
+            min-width: 300px;
+            max-width: 100%;
+            text-align: center;
+        }
+        .card-body {
+            padding: 40px;
+        }
+        .card-text {
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
-    {% if access_token %}
-    <p>Latest Data: <span id="data">{{ data }}</span></p>
-        <form action="/logout" method="get">
-            <button type="submit">Logout</button>
-        </form>
-    {% else %}
-        <a href="/login">Login with GitHub</a>
-    {% endif %}
+    <div class="container">
+        <div class="card">
+            <div class="card-body">
+                {% if access_token %}
+                    <h5 class="card-title">Latest Data</h5>
+                    <p class="card-text"><span id="data" class="fw-bold">{{ data }}</span></p>
+                    <form action="/logout" method="get">
+                        <button type="submit" class="btn btn-primary">Logout</button>
+                    </form>
+                {% else %}
+                    <h5 class="card-title">No permission</h5>
+                    <p class="card-text">Login with GitHub to view data.</p>
+                    <a href="/login" class="btn btn-primary">Login with GitHub</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
     <script>
         let socket = new WebSocket("ws://localhost:8000/ws");
         socket.onmessage = function(event) {
