@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "redis"
     REDIS_PORT: str = "6379"
     REDIS_URL: str = f"redis://{REDIS_HOST}:{REDIS_PORT}"
+    REDIS_CHANNEL: str = "data_channel"
 
     # GitHub OAuth
     GITHUB_CLIENT_ID: str = "Iv23ligsAaz9odF6zv04"
