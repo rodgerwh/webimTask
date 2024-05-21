@@ -44,7 +44,7 @@ async def channel_data():
     redis_pubsub.subscribe(settings.REDIS_CHANNEL)
     while True:
         message = redis_pubsub.get_message()
-        if message:
+        if message and message["type"] == "message":
             data = message["data"].decode("utf-8")
             await send_data(data)
         await sleep(0.1)
